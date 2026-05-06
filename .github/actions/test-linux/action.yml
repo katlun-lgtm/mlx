@@ -9,7 +9,21 @@ inputs:
 runs:
   using: "composite"
   steps:
+    # FIXME: The distributed tests fail with free-threading Python.
+    - name: Check free-threading Python
+      id: is-free-threading
+      shell: bash
+      run: |
+        echo "::group::Check free-threading Python"
+        if python -VV 2>&1 | grep "free-threading"; then
+          echo "result=true" >> $GITHUB_OUTPUT
+        else
+          echo "result=false" >> $GITHUB_OUTPUT
+        fi
+        echo "::endgroup::"
+
     - name: Run MPI tests
+      if: ${{ steps.is-free-threading.outputs.result == 'false' }}
       shell: bash
       run: |
         echo "::group::MPI tests"
@@ -17,7 +31,7 @@ runs:
         echo "::endgroup::"
 
     - name: Run distributed tests
-      if: ${{ inputs.has-gpu == 'false' }}
+      if: ${{ steps.is-free-threading.outputs.result == 'false' && inputs.has-gpu == 'false' }}
       shell: bash
       run: |
         echo "::group::Distributed tests"

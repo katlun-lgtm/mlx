@@ -3942,7 +3942,6 @@ array cumsum(
     bool reverse /* = false*/,
     bool inclusive /* = true*/,
     std::optional<Dtype> dtype /* = std::nullopt*/,
-    bool include_initial /* = false*/,
     StreamOrDevice s /* = {}*/) {
   int ndim = a.ndim();
   if (axis >= ndim || axis < -ndim) {
@@ -3954,20 +3953,12 @@ array cumsum(
   axis = (axis + a.ndim()) % a.ndim();
   auto x = dtype ? astype(a, *dtype, s) : a;
   auto out_type = x.dtype() == bool_ ? int32 : x.dtype();
-  auto out = array(
+  return array(
       x.shape(),
       out_type,
       std::make_shared<Scan>(
           to_stream(s), Scan::ReduceType::Sum, axis, reverse, inclusive),
       {x});
-  if (include_initial) {
-    Shape init_shape = out.shape();
-    init_shape[axis] = 1;
-    auto init = zeros(init_shape, out.dtype(), s);
-    out = reverse ? concatenate({out, init}, axis, s)
-                  : concatenate({init, out}, axis, s);
-  }
-  return out;
 }
 
 array cumsum(
@@ -3975,10 +3966,9 @@ array cumsum(
     bool reverse /* = false*/,
     bool inclusive /* = true*/,
     std::optional<Dtype> dtype /* = std::nullopt*/,
-    bool include_initial /* = false*/,
     StreamOrDevice s /* = {}*/) {
   return cumsum(
-      flatten(a, to_stream(s)), 0, reverse, inclusive, dtype, include_initial, to_stream(s));
+      flatten(a, to_stream(s)), 0, reverse, inclusive, dtype, to_stream(s));
 }
 
 array cumprod(
@@ -3987,7 +3977,6 @@ array cumprod(
     bool reverse /* = false*/,
     bool inclusive /* = true*/,
     std::optional<Dtype> dtype /* = std::nullopt*/,
-    bool include_initial /* = false*/,
     StreamOrDevice s /* = {}*/) {
   int ndim = a.ndim();
   if (axis >= ndim || axis < -ndim) {
@@ -3998,20 +3987,12 @@ array cumprod(
   }
   axis = (axis + a.ndim()) % a.ndim();
   auto x = dtype ? astype(a, *dtype, s) : a;
-  auto out = array(
+  return array(
       x.shape(),
       x.dtype(),
       std::make_shared<Scan>(
           to_stream(s), Scan::ReduceType::Prod, axis, reverse, inclusive),
       {x});
-  if (include_initial) {
-    Shape init_shape = out.shape();
-    init_shape[axis] = 1;
-    auto init = ones(init_shape, out.dtype(), s);
-    out = reverse ? concatenate({out, init}, axis, s)
-                  : concatenate({init, out}, axis, s);
-  }
-  return out;
 }
 
 array cumprod(
@@ -4019,9 +4000,8 @@ array cumprod(
     bool reverse /* = false*/,
     bool inclusive /* = true*/,
     std::optional<Dtype> dtype /* = std::nullopt*/,
-    bool include_initial /* = false*/,
     StreamOrDevice s /* = {}*/) {
-  return cumprod(flatten(a, s), 0, reverse, inclusive, dtype, include_initial, s);
+  return cumprod(flatten(a, s), 0, reverse, inclusive, dtype, s);
 }
 
 array cummax(

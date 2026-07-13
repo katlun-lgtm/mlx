@@ -1,5 +1,6 @@
 // Copyright © 2024 Apple Inc.
 
+#include <iostream>
 #include <unordered_map>
 
 #include "mlx/backend/cuda/cuda.h"
@@ -9,6 +10,7 @@
 #include "mlx/distributed/mpi/mpi.h"
 #include "mlx/distributed/nccl/nccl.h"
 #include "mlx/distributed/ring/ring.h"
+#include "mlx/utils.h"
 
 namespace mlx::core::distributed {
 
@@ -188,6 +190,20 @@ Group init(bool strict /* = false */, const std::string& bk /* = "any" */) {
   if (group == nullptr) {
     group = std::make_shared<detail::EmptyGroup>();
   } else {
+    if (env::metal_fast_synch()) {
+      static bool warned = false;
+      if (!warned) {
+        warned = true;
+        std::cerr
+            << "[distributed] MLX_METAL_FAST_SYNCH=1 is unsafe with "
+            << "distributed communication: the fast fence's GPU spin-wait "
+            << "has no guaranteed CPU/GPU memory coherence, and the fence "
+            << "handoff between the GPU stream and the communication stream "
+            << "can deadlock, leaving the GPU wedged (see issues #3142 and "
+            << "#3830). Unset MLX_METAL_FAST_SYNCH for distributed runs."
+            << std::endl;
+      }
+    }
     backends.insert({"any", group});
   }
   backends.insert({std::move(bk_), group});

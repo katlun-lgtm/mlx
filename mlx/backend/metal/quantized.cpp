@@ -88,6 +88,10 @@ inline array ensure_row_contiguous_matrix(
 // matmul tile amortizes them across 32 rows.
 inline int
 get_qmv_batch_limit(int D, int O, const std::string& mode, metal::Device& d) {
+  // HARNESS ONLY (not for upstream): forced limit for crossover measurement.
+  if (int lim = env::get_var("MLX_QMV_BATCH_LIMIT", 0); lim > 0) {
+    return lim;
+  }
   auto arch_size = d.get_architecture().back();
   auto arch_gen = d.get_architecture_gen();
   // Measured on M3 Max (g15s) for affine mode with qmv_wide active: the

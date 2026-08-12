@@ -77,7 +77,7 @@ class Optimizer:
         state initialization.
 
         Args:
-            parameter (mx.array): A single parameter that will be optimized.
+            parameter (array): A single parameter that will be optimized.
             state (dict): The optimizer's state.
         """
         raise NotImplementedError()
@@ -112,8 +112,8 @@ class Optimizer:
         """To be extended by derived classes to implement the optimizer's update.
 
         Args:
-            gradient (mx.array): The ``parameter`` gradient.
-            parameter (mx.array): The ``parameter`` to update.
+            gradient (array): The ``parameter`` gradient.
+            parameter (array): The ``parameter`` to update.
             state (dict): The optimizer's state.
         """
         raise NotImplementedError()
@@ -968,6 +968,9 @@ def clip_grad_norm(grads, max_norm):
         (dict, float): The possibly rescaled gradients and the original
         gradient norm.
     """
+    if max_norm < 0:
+        raise ValueError(f"max_norm should be >=0, {max_norm} was provided instead")
+
     norm_squared = tree_reduce(lambda acc, g: acc + g.square().sum(), grads, 0.0)
     total_norm = mx.sqrt(norm_squared)
     normalizer = mx.minimum(max_norm / (total_norm + 1e-6), 1.0)

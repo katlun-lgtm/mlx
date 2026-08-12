@@ -312,7 +312,7 @@ void init_array(nb::module_& m) {
           "val"_a,
           "dtype"_a = nb::none(),
           nb::sig(
-              "def __init__(self: array, val: Union[scalar, list, tuple, DLPackCompatible, array], dtype: Optional[Dtype] = None)"))
+              "def __init__(self: array, val: scalar | list | tuple | DLPackCompatible | array, dtype: Dtype | None = None)"))
       .def_prop_ro(
           "size",
           &mx::array::size,
@@ -539,6 +539,13 @@ void init_array(nb::module_& m) {
               return nb::make_tuple(1, 0);
             }
           })
+      .def(
+          "__array__",
+          [](const mx::array& self, nb::object dtype, nb::object copy) {
+            return mlx_to_np_array(self);
+          },
+          "dtype"_a = nb::none(),
+          "copy"_a = nb::none())
       .def("__copy__", [](const mx::array& self) { return mx::array(self); })
       .def(
           "__deepcopy__",
@@ -1025,6 +1032,11 @@ void init_array(nb::module_& m) {
           nb::rv_policy::none)
       .def("__int__", [](mx::array& a) { return nb::int_(to_scalar(a)); })
       .def("__float__", [](mx::array& a) { return nb::float_(to_scalar(a)); })
+      .def(
+          "__complex__",
+          [](mx::array& a) {
+            return nb::cast<std::complex<double>>(to_scalar(a));
+          })
       .def(
           "__format__",
           [](mx::array& a, nb::object format_spec) {
